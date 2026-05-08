@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [activeKey, setActiveKey] = useState<ActiveTab>(() => {
     const saved = sessionStorage.getItem('dashboard-tab');
     const valid: ActiveTab[] = ['ALL', 'A', 'B', 'C', 'D'];
-    return valid.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'A';
+    return valid.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'ALL';
   });
 
   const handleTabChange = (key: ActiveTab) => {
