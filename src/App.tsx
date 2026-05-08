@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import rawData from './data/metrics.json';
 import { ActiveTab, DatasetKey, MetricsData } from './types';
 import {
@@ -38,17 +38,66 @@ const App: React.FC = () => {
 
   const { days, metadata } = dataset;
 
+  const minDate = days[0]?.date ?? '';
+  const maxDate = days[days.length - 1]?.date ?? '';
+
+  const [dateFrom, setDateFrom] = useState(() => {
+    const saved = sessionStorage.getItem(`dashboard-date-${activeKey}-from`);
+    return saved && saved >= minDate && saved <= maxDate ? saved : minDate;
+  });
+
+  const [dateTo, setDateTo] = useState(() => {
+    const saved = sessionStorage.getItem(`dashboard-date-${activeKey}-to`);
+    return saved && saved >= minDate && saved <= maxDate ? saved : maxDate;
+  });
+
+  useEffect(() => {
+    const dsMin = days[0]?.date ?? '';
+    const dsMax = days[days.length - 1]?.date ?? '';
+    const savedFrom = sessionStorage.getItem(`dashboard-date-${activeKey}-from`);
+    const savedTo = sessionStorage.getItem(`dashboard-date-${activeKey}-to`);
+    setDateFrom(savedFrom && savedFrom >= dsMin && savedFrom <= dsMax ? savedFrom : dsMin);
+    setDateTo(savedTo && savedTo >= dsMin && savedTo <= dsMax ? savedTo : dsMax);
+  }, [activeKey]);
+
+  const handleDateFromChange = (val: string) => {
+    sessionStorage.setItem(`dashboard-date-${activeKey}-from`, val);
+    setDateFrom(val);
+  };
+
+  const handleDateToChange = (val: string) => {
+    sessionStorage.setItem(`dashboard-date-${activeKey}-to`, val);
+    setDateTo(val);
+  };
+
+  const handleDateReset = () => {
+    sessionStorage.removeItem(`dashboard-date-${activeKey}-from`);
+    sessionStorage.removeItem(`dashboard-date-${activeKey}-to`);
+    setDateFrom(minDate);
+    setDateTo(maxDate);
+  };
+
+  const filteredDays = useMemo(
+    () => days.filter(d => d.date >= dateFrom && d.date <= dateTo),
+    [days, dateFrom, dateTo],
+  );
+
+  const filteredDataset = useMemo(
+    () => ({ ...dataset, days: filteredDays }),
+    [dataset, filteredDays],
+  );
+
   const metaMap = useMemo(
     () => Object.fromEntries(metadata.metrics.map(m => [m.key, m])),
     [metadata],
   );
 
-  const last30 = useMemo(() => days.slice(-30), [days]);
-  const prev30 = useMemo(() => days.slice(-60, -30), [days]);
-  const last7 = useMemo(() => days.slice(-7), [days]);
-  const prev7 = useMemo(() => days.slice(-14, -7), [days]);
+  const last30 = useMemo(() => filteredDays.slice(-30), [filteredDays]);
+  const prev30 = useMemo(() => filteredDays.slice(-60, -30), [filteredDays]);
+  const last7 = useMemo(() => filteredDays.slice(-7), [filteredDays]);
+  const prev7 = useMemo(() => filteredDays.slice(-14, -7), [filteredDays]);
 
-  const focus = useMemo(() => detectFocus(dataset), [dataset]);
+  const focus = useMemo(() => detectFocus(filteredDataset), [filteredDataset]);
   const funnel = useMemo(() => calcFunnel(last30), [last30]);
 
   const kpis = useMemo(() => {
@@ -60,8 +109,8 @@ const App: React.FC = () => {
     const rtPrev = avgMetric(prev7, 'avg_response_time_min');
     const rtTrend = calcTrend(rtLast, rtPrev, 'lower_is_better');
 
-    const staleNow = days[days.length - 1].metrics['stale_deals'] ?? null;
-    const stale30ago = days[days.length - 31]?.metrics['stale_deals'] ?? null;
+    const staleNow = filteredDays[filteredDays.length - 1]?.metrics['stale_deals'] ?? null;
+    const stale30ago = filteredDays[filteredDays.length - 31]?.metrics['stale_deals'] ?? null;
     const staleTrend = calcTrend(staleNow, stale30ago, 'lower_is_better');
 
     const leadsLast = avgMetric(last7, 'leads_created');
@@ -124,7 +173,7 @@ const App: React.FC = () => {
         sparkKey: 'support_tickets_opened',
       },
     ];
-  }, [last7, last30, prev7, prev30, days]);
+  }, [last7, last30, prev7, prev30, filteredDays]);
 
   const chartData30 = useMemo(
     () => last30.map(d => ({
@@ -135,9 +184,11 @@ const App: React.FC = () => {
     [last30],
   );
 
-  const lastDate = days[days.length - 1].date;
+  const lastDate = filteredDays[filteredDays.length - 1]?.date ?? maxDate;
   const rtMeta = metaMap['avg_response_time_min'];
   const staleMeta = metaMap['stale_deals'];
+
+  const isFiltered = dateFrom !== minDate || dateTo !== maxDate;
 
   return (
     <div className="app">
@@ -156,6 +207,35 @@ const App: React.FC = () => {
             </div>
           </div>
           <DatasetTabs active={activeKey} onChange={handleTabChange} />
+        </div>
+
+        <div className="header-filter">
+          <span className="filter-label">Período</span>
+          <input
+            type="date"
+            className="filter-input"
+            value={dateFrom}
+            min={minDate}
+            max={dateTo}
+            onChange={e => handleDateFromChange(e.target.value)}
+          />
+          <span className="filter-sep">—</span>
+          <input
+            type="date"
+            className="filter-input"
+            value={dateTo}
+            min={dateFrom}
+            max={maxDate}
+            onChange={e => handleDateToChange(e.target.value)}
+          />
+          {isFiltered && (
+            <button
+              className="filter-reset"
+              onClick={handleDateReset}
+            >
+              Resetear
+            </button>
+          )}
         </div>
       </header>
 
