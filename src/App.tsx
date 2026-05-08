@@ -20,7 +20,15 @@ const data = rawData as unknown as MetricsData;
 const allDataset = aggregateDatasets(data);
 
 const App: React.FC = () => {
-  const [activeKey, setActiveKey] = useState<ActiveTab>('A');
+  const [activeKey, setActiveKey] = useState<ActiveTab>(() => {
+    const saved = sessionStorage.getItem('dashboard-tab');
+    return (saved as ActiveTab) || 'Todos';
+  });
+
+  const handleTabChange = (key: ActiveTab) => {
+    sessionStorage.setItem('dashboard-tab', key);
+    setActiveKey(key);
+  };
 
   const dataset = useMemo(
     () => (activeKey === 'ALL' ? allDataset : data[activeKey as DatasetKey]),
@@ -146,7 +154,7 @@ const App: React.FC = () => {
               <span className="header-date">{lastDate}</span>
             </div>
           </div>
-          <DatasetTabs active={activeKey} onChange={setActiveKey} />
+          <DatasetTabs active={activeKey} onChange={handleTabChange} />
         </div>
       </header>
 
