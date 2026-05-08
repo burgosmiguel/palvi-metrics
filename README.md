@@ -11,6 +11,7 @@
 * Preparar entorno cloud (GCP)
    * Cloud Run
    * Cloud Build
+* URL https://palvi-metrics-817481579792.southamerica-west1.run.app
 
 
 ### Qué hace la app
@@ -26,3 +27,10 @@
 * Obtener datos de distintas fuentes
 * Crear API para que datos sean consultados desde otros puntos
 * Exportar graficos
+
+### Instrucciones para correrlo localmente
+```
+git clone https://github.com/burgosmiguel/palvi-metrics.git
+npm install
+npm run dev
+```
