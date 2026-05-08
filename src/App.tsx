@@ -22,7 +22,8 @@ const allDataset = aggregateDatasets(data);
 const App: React.FC = () => {
   const [activeKey, setActiveKey] = useState<ActiveTab>(() => {
     const saved = sessionStorage.getItem('dashboard-tab');
-    return (saved as ActiveTab) || 'Todos';
+    const valid: ActiveTab[] = ['ALL', 'A', 'B', 'C', 'D'];
+    return valid.includes(saved as ActiveTab) ? (saved as ActiveTab) : 'A';
   });
 
   const handleTabChange = (key: ActiveTab) => {
