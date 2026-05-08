@@ -24,6 +24,7 @@ export interface Dataset {
 }
 
 export type DatasetKey = 'A' | 'B' | 'C' | 'D';
+export type ActiveTab = DatasetKey | 'ALL';
 
 export interface MetricsData {
   A: Dataset;

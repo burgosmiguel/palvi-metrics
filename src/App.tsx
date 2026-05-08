@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import rawData from './data/metrics.json';
-import { DatasetKey, MetricsData } from './types';
+import { ActiveTab, DatasetKey, MetricsData } from './types';
 import {
+  aggregateDatasets,
   avgMetric,
   winRate,
   calcTrend,
@@ -16,11 +17,16 @@ import TrendChart from './components/TrendChart';
 import FunnelViz from './components/FunnelViz';
 
 const data = rawData as unknown as MetricsData;
+const allDataset = aggregateDatasets(data);
 
 const App: React.FC = () => {
-  const [activeKey, setActiveKey] = useState<DatasetKey>('A');
+  const [activeKey, setActiveKey] = useState<ActiveTab>('A');
 
-  const dataset = data[activeKey as DatasetKey];
+  const dataset = useMemo(
+    () => (activeKey === 'ALL' ? allDataset : data[activeKey as DatasetKey]),
+    [activeKey],
+  );
+
   const { days, metadata } = dataset;
 
   const metaMap = useMemo(
@@ -37,27 +43,22 @@ const App: React.FC = () => {
   const funnel = useMemo(() => calcFunnel(last30), [last30]);
 
   const kpis = useMemo(() => {
-    // Win Rate 30d
     const wrLast = winRate(last30);
     const wrPrev = winRate(prev30);
     const wrTrend = calcTrend(wrLast, wrPrev, 'higher_is_better');
 
-    // Response Time 7d avg
     const rtLast = avgMetric(last7, 'avg_response_time_min');
     const rtPrev = avgMetric(prev7, 'avg_response_time_min');
     const rtTrend = calcTrend(rtLast, rtPrev, 'lower_is_better');
 
-    // Stale Deals — latest snapshot
     const staleNow = days[days.length - 1].metrics['stale_deals'] ?? null;
     const stale30ago = days[days.length - 31]?.metrics['stale_deals'] ?? null;
     const staleTrend = calcTrend(staleNow, stale30ago, 'lower_is_better');
 
-    // New Leads/day 7d avg
     const leadsLast = avgMetric(last7, 'leads_created');
     const leadsPrev = avgMetric(prev7, 'leads_created');
     const leadsTrend = calcTrend(leadsLast, leadsPrev, 'higher_is_better');
 
-    // Support Tickets/day 7d avg
     const suppLast = avgMetric(last7, 'support_tickets_opened');
     const suppPrev = avgMetric(prev7, 'support_tickets_opened');
     const suppTrend = calcTrend(suppLast, suppPrev, 'lower_is_better');
@@ -136,7 +137,12 @@ const App: React.FC = () => {
           <div className="header-brand">
             <span className="header-diamond">◆</span>
             <div>
-              <span className="header-title">Sales Dashboard</span>
+              <span className="header-title">
+                Sales Dashboard
+                {activeKey === 'ALL' && (
+                  <span className="header-all-badge">Consolidado</span>
+                )}
+              </span>
               <span className="header-date">{lastDate}</span>
             </div>
           </div>
@@ -146,11 +152,8 @@ const App: React.FC = () => {
 
       <main className="main">
         <div className="container">
-
-          {/* Focus */}
           <FocusAlert alert={focus} />
 
-          {/* KPIs */}
           <div className="kpi-grid">
             {kpis.map(kpi => (
               <KPICard
@@ -172,7 +175,6 @@ const App: React.FC = () => {
             ))}
           </div>
 
-          {/* Trend Charts */}
           <div className="charts-row">
             <div className="card">
               <h3 className="chart-title">Tiempo de Respuesta — últimos 30 días</h3>
@@ -195,14 +197,12 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Funnel */}
           <div className="card funnel-card">
             <h3 className="chart-title" style={{ marginBottom: 16 }}>
               Embudo de Conversión — últimos 30 días
             </h3>
             <FunnelViz stages={funnel} />
           </div>
-
         </div>
       </main>
     </div>

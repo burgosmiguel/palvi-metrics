@@ -1,4 +1,41 @@
-import { Dataset, DayData } from '../types';
+import { Dataset, DayData, MetricsData } from '../types';
+
+const AVG_METRICS = new Set([
+  'avg_response_time_min',
+  'avg_deal_cycle_days',
+  'support_avg_resolution_hours',
+]);
+
+export function aggregateDatasets(data: MetricsData): Dataset {
+  const datasets = [data.A, data.B, data.C, data.D];
+  const ref = data.A;
+  const metricKeys = ref.metadata.metrics.map(m => m.key);
+
+  const days: DayData[] = ref.days.map(refDay => {
+    const daySlices = datasets.map(
+      ds => ds.days.find(d => d.date === refDay.date),
+    );
+    const metrics: Record<string, number | null> = {};
+
+    for (const key of metricKeys) {
+      const vals = daySlices
+        .map(d => d?.metrics[key] ?? null)
+        .filter((v): v is number => v !== null);
+
+      if (vals.length === 0) {
+        metrics[key] = null;
+      } else if (AVG_METRICS.has(key)) {
+        metrics[key] = vals.reduce((a, b) => a + b, 0) / vals.length;
+      } else {
+        metrics[key] = vals.reduce((a, b) => a + b, 0);
+      }
+    }
+
+    return { date: refDay.date, metrics };
+  });
+
+  return { metadata: ref.metadata, days };
+}
 
 export function avgMetric(days: DayData[], key: string): number | null {
   const vals = days

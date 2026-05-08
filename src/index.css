@@ -96,6 +96,31 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.dataset-tab-all-active {
+  background: #3b82f6;
+  color: white;
+}
+
+.dataset-tabs-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  align-self: stretch;
+  margin: 2px 2px;
+}
+
+.header-all-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
 /* ── Main layout ── */
 .main {
   padding: 20px 24px 40px;
