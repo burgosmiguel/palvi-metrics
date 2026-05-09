@@ -33,4 +33,5 @@
 git clone https://github.com/burgosmiguel/palvi-metrics.git
 npm install
 npm run dev
+http://localhost:5173/
 ```
